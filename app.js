@@ -51,8 +51,56 @@ app.post("/students", (req, res) => {
   };
 
   db.collection("students").insertOne(student)
-    .then(result => res.send(result))
+    .then(result => res.redirect("/students"))
     .catch(err => res.status(500).json({ error: "An error occured while inserting students", detail: err }));
+});
+
+app.get("/students/:id/edit", (req, res) => {
+  const { id } = req.params;
+  const objectId = new mongodb.ObjectId(id);
+  
+  db.collection("students").findOne({ _id: objectId })
+    .then(student => {
+      if(!student){
+        return res.status(404).json({ error: "Student not found", detail: err });
+      }
+      res.render("edit_student copy", { student });
+    })
+    .catch(err => res.status(500).json({ error: "An error occured while retrieving students", detail: err }));
+});
+
+app.put("/students/:id", (req, res) => {
+  const { id } = req.params;
+  const objectId = new mongodb.ObjectId(id);
+
+  const updateStudent = {
+    firstname: req.body.firstname,
+    lastname: req.body.lastname,
+    birthdate: new Date(req.body.birthdate)
+  };
+
+  db.collection("students").updateOne({ _id: objectId }, { $set: updateStudent })
+  .then(result => {
+    if(result.matchedCount === 0) {
+      return res.status(404).json({error: "Student not found.", detail: err});
+    }
+    res.redirect("/students");
+  })
+  .catch(err => res.status(500).json({error: "An error occurred while updating student", detail: err}));
+});
+
+app.delete("/students/:id", (req, res) => {
+  const { id } = req.params;
+  const objectId = new mongodb.ObjectId(id);
+
+  db.collection("students").deleteOne({ _id: objectId })
+  .then(result => {
+    if(result.deletedCount === 0) {
+      return res.status(404).json({error: "Student not found.", detail: err});
+    }
+    res.redirect("/students");
+  })
+  .catch(err => res.status(500).json({error: "An error occurred while deleting student", detail: err}));
 });
 
 app.listen(port, () => {
